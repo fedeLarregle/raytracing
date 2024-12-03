@@ -3,8 +3,22 @@
 
 #include "ray_tracing_math.h"
 #include "ray.h"
+#include "sphere.h"
 
-v3 ray_color(ray r) {
+v3 ray_color(ray r, sphere s) {
+    v3 cq = s.center - r.origin;
+    float a = dot(r.direction, r.direction);
+    float b = dot(-2 * r.direction, cq);
+    float c = dot(cq, cq) - (s.radius * s.radius);
+    // NOTE(fede): Lets evaluate the quadratic equation's
+    //  discriminant to see if our ray has hit the sphere
+    float discriminant = (b * b) - 4 * a * c;
+    v3 red_color = V3(1.0, 0.0, 0.0);
+
+    if (discriminant >= 0) {
+        return red_color;
+    }
+
     v3 unit_direction = unit_vector(r.direction);
     v3 white_color = V3(1.0, 1.0, 1.0);
     v3 blue_sky_color = V3(0.5, 0.7, 1.0);
@@ -37,7 +51,11 @@ int main() {
 
     v3 viewport_upper_left = camera_center - V3(0.0, 0.0, focal_length) - (viewport_u / 2) - (viewport_v / 2);
     v3 pixel00_location = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
-    
+
+
+    // Sphere in our scene
+    sphere s = { V3(0.0, 0.0, -1.0), 0.5 };
+
     printf("P3\n%d %d\n255\n", image_width, image_height);
     for (int j = 0; j < image_height; ++j) {
         for (int i = 0; i < image_width; ++i) {
@@ -45,7 +63,7 @@ int main() {
             v3 ray_direction = pixel_center - camera_center;
 
             ray r = { camera_center, ray_direction };
-            v3 color = ray_color(r);
+            v3 color = ray_color(r, s);
 
             printf("%d %d %d\n", (int (color.r * 255.999)), (int) (color.g  * 255.999), (int)(color.b  * 255.999));
         }
