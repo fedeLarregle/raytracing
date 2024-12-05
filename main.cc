@@ -14,12 +14,26 @@ v3 ray_color(ray r, sphere s) {
     //  discriminant to see if our ray has hit the sphere
     float discriminant = (b * b) - 4 * a * c;
     v3 red_color = V3(1.0, 0.0, 0.0);
+    v3 black_color = V3(0.0, 0.0, 0.0);
 
     if (discriminant >= 0) {
-        return red_color;
+        float root1 = (-b - sqrtf(discriminant)) / (2 * a);
+        float root2 = (-b + sqrtf(discriminant)) / (2 * a);
+        if (root1 > 0) {
+            // NOTE(fede): We take the vector going from the
+            // center of the sphere to the ray hit point.
+            // This will give us the vector pointing perpen-
+            // dicular to the hit surface.
+            // We normalize that vector for future calculations.
+            v3 N = normalize(ray_at(r, root1) - s.center);
+            v3 N0to1 = 0.5 * (V3(N.x + 1, N.y + 1, N.z + 1));
+            float light = max(dot(-r.direction, N), 0.0);
+
+            return N0to1 * light;
+        }
     }
 
-    v3 unit_direction = unit_vector(r.direction);
+    v3 unit_direction = normalize(r.direction);
     v3 white_color = V3(1.0, 1.0, 1.0);
     v3 blue_sky_color = V3(0.5, 0.7, 1.0);
     float t = 0.5 * (unit_direction.y + 1.0);
@@ -65,7 +79,7 @@ int main() {
             ray r = { camera_center, ray_direction };
             v3 color = ray_color(r, s);
 
-            printf("%d %d %d\n", (int (color.r * 255.999)), (int) (color.g  * 255.999), (int)(color.b  * 255.999));
+            printf("%d %d %d\n", (int) (color.r * 255.999), (int) (color.g  * 255.999), (int)(color.b  * 255.999));
         }
     }
     return 0;

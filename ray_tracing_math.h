@@ -96,7 +96,7 @@ inline v3 lerp(v3 a, float t, v3 b) {
     return result;
 }
 
-inline v3 unit_vector(v3 a) {
+inline v3 normalize(v3 a) {
     v3 result = a * (1.0f / length(a));
     return result;
 }
