@@ -3,6 +3,23 @@
 
 #include "math.h"
 
+float min(float a, float b) {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+float max(float a, float b) {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+
+}
+
 union v3 {
     struct {
         float x, y, z;
@@ -23,6 +40,16 @@ inline v3 operator+(v3 a, v3 b) {
     result.x = a.x + b.x;
     result.y = a.y + b.y;
     result.z = a.z + b.z;
+
+    return result;
+}
+
+inline v3 operator+(v3 a, float b) {
+    v3 result;
+
+    result.x = a.x + b;
+    result.y = a.y + b;
+    result.z = a.z + b;
 
     return result;
 }
@@ -101,21 +128,14 @@ inline v3 normalize(v3 a) {
     return result;
 }
 
-float min(float a, float b) {
-    if (a < b) {
-        return a;
-    } else {
-        return b;
-    }
-}
+inline v3 clamp01(v3 a) {
+    v3 result = {
+        min(max(a.x, 0.0), 1.0),
+        min(max(a.y, 0.0), 1.0),
+        min(max(a.z, 0.0), 1.0)
+    };
 
-float max(float a, float b) {
-    if (a > b) {
-        return a;
-    } else {
-        return b;
-    }
-
+    return result;
 }
 
 #endif

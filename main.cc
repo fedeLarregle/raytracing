@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "camera.h"
 #include "ray_tracing_math.h"
 #include "ray.h"
 #include "sphere.h"
@@ -13,23 +14,23 @@ v3 ray_color(ray r, sphere s) {
     // NOTE(fede): Lets evaluate the quadratic equation's
     //  discriminant to see if our ray has hit the sphere
     float discriminant = (b * b) - 4 * a * c;
-    v3 red_color = V3(1.0, 0.0, 0.0);
-    v3 black_color = V3(0.0, 0.0, 0.0);
 
     if (discriminant >= 0) {
-        float root1 = (-b - sqrtf(discriminant)) / (2 * a);
-        float root2 = (-b + sqrtf(discriminant)) / (2 * a);
-        if (root1 > 0) {
+        float t0 = (-b - sqrtf(discriminant)) / (2 * a);
+        // NOTE(fede): _fardest_ of the two hits onto the sphere
+        // float t1 = (-b + sqrtf(discriminant)) / (2 * a);
+        if (t0 > 0) {
             // NOTE(fede): We take the vector going from the
             // center of the sphere to the ray hit point.
             // This will give us the vector pointing perpen-
             // dicular to the hit surface.
             // We normalize that vector for future calculations.
-            v3 N = normalize(ray_at(r, root1) - s.center);
-            v3 N0to1 = 0.5 * (V3(N.x + 1, N.y + 1, N.z + 1));
-            float light = max(dot(-r.direction, N), 0.0);
+            v3 N = normalize(ray_at(r, t0) - s.center);
+            v3 N0to1 = (0.5 * N) + 0.5;
+            v3 light_direction = normalize(V3(-1.0, 1.0, -1.0));
+            float light = max(dot(-light_direction, N), 0.0);
 
-            return N0to1 * light;
+            return clamp01(N0to1 * light);
         }
     }
 
@@ -47,24 +48,7 @@ int main() {
     int image_height = (int) image_width / aspect_ratio;
     image_height = image_height < 1 ? 1 : image_height;
 
-    // Viewport setup
-    float viewport_height = 2.0;
-    float viewport_width = viewport_height * ((float) image_width / image_height);
-
-    // Camera setup
-    // distance between viewport and camera center point
-    float focal_length = 1.0f;
-    v3 camera_center = V3(0.0, 0.0, 0.0);
-
-    // Viewport
-    v3 viewport_u = V3(viewport_width, 0.0, 0.0);
-    v3 viewport_v = V3(0.0, -viewport_height, 0.0);
-
-    v3 pixel_delta_u = viewport_u / image_width;
-    v3 pixel_delta_v = viewport_v / image_height;
-
-    v3 viewport_upper_left = camera_center - V3(0.0, 0.0, focal_length) - (viewport_u / 2) - (viewport_v / 2);
-    v3 pixel00_location = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+    camera c = Camera(image_width, image_height);
 
 
     // Sphere in our scene
@@ -73,13 +57,10 @@ int main() {
     printf("P3\n%d %d\n255\n", image_width, image_height);
     for (int j = 0; j < image_height; ++j) {
         for (int i = 0; i < image_width; ++i) {
-            v3 pixel_center = pixel00_location + (i * pixel_delta_u) + (j * pixel_delta_v);
-            v3 ray_direction = pixel_center - camera_center;
-
-            ray r = { camera_center, ray_direction };
+            ray r = get_ray(c, i, j);
             v3 color = ray_color(r, s);
 
-            printf("%d %d %d\n", (int) (color.r * 255.999), (int) (color.g  * 255.999), (int)(color.b  * 255.999));
+            printf("%d %d %d\n", (int) (color.r * 255.0f), (int) (color.g  * 255.0f), (int)(color.b  * 255.0f));
         }
     }
     return 0;
