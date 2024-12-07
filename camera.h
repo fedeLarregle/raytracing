@@ -1,5 +1,5 @@
-#ifndef CAMERA_RAY_TRACING
-#define CAMERA_RAY_TRACING
+#ifndef RAY_TRACING_CAMERA
+#define RAY_TRACING_CAMERA
 
 #include "ray_tracing_math.h"
 #include "ray.h"
@@ -21,7 +21,7 @@ camera Camera(int image_width, int image_height) {
 
     // Camera setup
     // distance between viewport and camera center point
-    float focal_length = 0.5f;
+    float focal_length = 1.0f;
     v3 camera_center = V3(0.0, 0.0, 0.0);
 
     // Viewport
@@ -44,7 +44,10 @@ camera Camera(int image_width, int image_height) {
 }
 
 ray get_ray(camera c, int x, int y) {
-    v3 pixel_center = c.pixel00_location + (x * c.pixel_delta_u) + (y * c.pixel_delta_v);
+    v3 random_offset = V3(randf() - 0.5, randf() - 0.5, 0.0);
+    v3 pixel_center = c.pixel00_location + 
+                      ((x + random_offset.x) * c.pixel_delta_u) +
+                      ((y + random_offset.y) * c.pixel_delta_v);
     v3 ray_direction = pixel_center - c.center;
     ray r = { c.center, ray_direction };
 

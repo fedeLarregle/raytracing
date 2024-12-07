@@ -1,6 +1,7 @@
 #ifndef RAY_TRACING_MATH
 #define RAY_TRACING_MATH
 
+#include <cstdlib>
 #include "math.h"
 
 float min(float a, float b) {
@@ -136,6 +137,14 @@ inline v3 clamp01(v3 a) {
     };
 
     return result;
+}
+
+inline float randf() {
+    return std::rand() / (RAND_MAX + 1.0);
+}
+
+inline float randf(float min, float max) {
+    return min + (max - min) * randf();
 }
 
 #endif
