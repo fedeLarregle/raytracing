@@ -30,12 +30,17 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
             // This will give us the vector pointing perpen-
             // dicular to the hit surface.
             // We normalize that vector for future calculations.
-            v3 N = normalize(ray_at(r, t0) - s.center);
-            v3 N0to1 = (0.5 * N) + 0.5;
-            // v3 light_direction = normalize(V3(-1.0, 1.0, -1.0));
-            // float light = max(dot(-r.direction, N), 0.0);
+            v3 p = ray_at(r, t0);
+            v3 N = normalize(p - s.center);
+            N = (0.5 * N) + 0.5;
+            bool is_front_face = dot(r.direction, N) < 0;
 
-            hit result = {clamp01(N0to1/* * light */), t0, true};
+            hit result = {};
+            result.t = t0;
+            result.p = p;
+            result.normal = is_front_face ? N : -N;
+            result.hit_object = true;
+
             return result;
         }
     }
@@ -47,9 +52,10 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
 v3 ray_color(ray r, float t_min, float t_max, scene s) {
     int size = 2;
     hit closest = {};
+    closest.t = FLT_MAX;
     for (int i = 0; i < size; ++i) {
         hit h = ray_color(r, t_min, t_max, s.spheres[i]);
-        if (h.hit_object) {
+        if (h.hit_object && h.t < closest.t) {
             closest = h;
         }
     }
@@ -64,8 +70,9 @@ v3 ray_color(ray r, float t_min, float t_max, scene s) {
 
         return lerp(white_color, t, blue_sky_color);
     }
-
-    return closest.color;
+    v3 direction = random_on_hemisphere(closest.normal);
+    ray new_r = { closest.p, direction };
+    return 0.5 * ray_color(new_r, 0.001, FLT_MAX, s);
 }
 
 int main() {
@@ -78,7 +85,7 @@ int main() {
 
 
     // Sphere in our scene
-    sphere spheres[2] = {{ V3(0.0, -100.0, -1.0), 100 }, { V3(0.0, 0.0, -1.0), 0.5 }};
+    sphere spheres[2] = {{ V3(0.0, -100.5, -1.0), 100 }, { V3(0.0, 0.0, -1.5), 0.5 }};
 
     scene s = {spheres};
     int samples_per_pixel = 100;

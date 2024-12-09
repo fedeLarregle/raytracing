@@ -5,6 +5,8 @@
 
 struct hit {
     v3 color;
+    v3 normal;
+    v3 p;
     float t;
     bool hit_object;
 };

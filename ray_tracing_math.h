@@ -147,4 +147,32 @@ inline float randf(float min, float max) {
     return min + (max - min) * randf();
 }
 
+inline v3 randv3() {
+    return V3(randf(), randf(), randf());
+}
+
+inline v3 randv3(float min, float max) {
+    return V3(randf(min, max), randf(min, max), randf(min, max));
+}
+
+inline v3 rand_unit_vector() {
+    while (true) {
+        v3 p = randv3(-1.0, 1.0);
+        float lensq = length_squared(p);
+        if (1e-160 < lensq && lensq <= 1) {
+            return p / sqrtf(lensq);
+        }
+    }
+}
+
+inline v3 random_on_hemisphere(v3 normal) {
+    v3 on_unit_sphere = rand_unit_vector();
+    if (dot(on_unit_sphere, normal) > 0.0) {
+        // NOTE(fede): in the same hemisphere
+        return on_unit_sphere;
+    } else {
+        return -on_unit_sphere;
+    }
+}
+
 #endif
