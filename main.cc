@@ -49,7 +49,11 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
     return result;
 }
 
-v3 ray_color(ray r, float t_min, float t_max, scene s) {
+v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
+    if (max_depth <= 0) {
+        return V3(0.0, 0.0, 0.0);
+    }
+
     int size = 2;
     hit closest = {};
     closest.t = FLT_MAX;
@@ -72,7 +76,7 @@ v3 ray_color(ray r, float t_min, float t_max, scene s) {
     }
     v3 direction = random_on_hemisphere(closest.normal);
     ray new_r = { closest.p, direction };
-    return 0.5 * ray_color(new_r, 0.001, FLT_MAX, s);
+    return 0.5 * ray_color(new_r, max_depth - 1, 0.001, FLT_MAX, s);
 }
 
 int main() {
@@ -85,11 +89,12 @@ int main() {
 
 
     // Sphere in our scene
-    sphere spheres[2] = {{ V3(0.0, -100.5, -1.0), 100 }, { V3(0.0, 0.0, -1.5), 0.5 }};
+    sphere spheres[2] = {{ V3(0.0, -100.5, -1.0), 100 }, { V3(0.0, 0.0, -1.0), 0.5 }};
 
     scene s = {spheres};
     int samples_per_pixel = 100;
     float pixel_samples_scale = 1.0 / samples_per_pixel;
+    int max_depth = 50;
 
     printf("P3\n%d %d\n255\n", image_width, image_height);
     for (int j = 0; j < image_height; ++j) {
@@ -97,7 +102,7 @@ int main() {
             v3 color = V3(0.0, 0.0, 0.0);
             for (int sample = 0; sample < samples_per_pixel; ++sample) {
                 ray r = get_ray(c, i, j);
-                color += ray_color(r, 0, FLT_MAX, s);
+                color += ray_color(r, max_depth, 0, FLT_MAX, s);
             }
 
             color *= pixel_samples_scale;
