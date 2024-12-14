@@ -12,10 +12,10 @@ typedef enum {
 } Type;
 
 struct material {
+    Type type;
     v3 attenuation;
     v3 albedo;
     ray scattered;
-    Type type;
 };
 
 material lambertian_scatter(ray in, hit h) {
@@ -33,13 +33,30 @@ material lambertian_scatter(ray in, hit h) {
     return result;
 }
 
+material metal_scatter(ray in, hit h) {
+    material result = {};
+
+    v3 reflected = reflect(in.direction, h.normal);
+    ray scattered = { h.p, reflected };
+    result.albedo = h.mat->albedo;
+    result.attenuation = h.mat->attenuation;
+    result.scattered = scattered;
+
+    return result;
+}
+
 material scatter(ray in, hit h) {
     material result = {};
     switch (h.mat->type)
     {
-    case Lambertian:
+    case Lambertian: {
         result = lambertian_scatter(in, h);
         break;
+    }
+    case Metal: {
+        result = metal_scatter(in, h);
+        break;
+    }
     
     default:
         break;

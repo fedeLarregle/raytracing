@@ -125,7 +125,7 @@ inline float length(v3 a) {
 }
 
 inline v3 lerp(v3 a, float t, v3 b) {
-    v3 result = (1 - t) * a + t * b;
+    v3 result = (1.0 - t) * a + t * b;
     return result;
 }
 
@@ -183,6 +183,10 @@ inline v3 random_on_hemisphere(v3 normal) {
 inline bool close_to_zero(v3 a) {
     float threshold = 1e-8;
     return (a.e[0] < threshold) && (a.e[1] < threshold) && (a.e[2] < threshold);
+}
+
+inline v3 reflect(v3 v, v3 n) {
+    return v - 2 * dot(v, n) * n;
 }
 
 #endif

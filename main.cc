@@ -11,6 +11,10 @@
 
 #define array_count(arr) (sizeof((arr)) / (sizeof((arr)[0])))
 
+inline bool surrounds(float min, float max, float n) {
+    return min < n && n < max;
+}
+
 hit ray_color(ray r, float t_min, float t_max, sphere s) {
     v3 cq = s.center - r.origin;
     float a = dot(r.direction, r.direction);
@@ -24,26 +28,32 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
         float t0 = (-b - sqrtf(discriminant)) / (2 * a);
         // NOTE(fede): _fardest_ of the two hits onto the sphere
         // float t1 = (-b + sqrtf(discriminant)) / (2 * a);
-        if (t0 > 0) {
-            // NOTE(fede): We take the vector going from the
-            // center of the sphere to the ray hit point.
-            // This will give us the vector pointing perpen-
-            // dicular to the hit surface.
-            // We normalize that vector for future calculations.
-            v3 p = ray_at(r, t0);
-            v3 N = normalize(p - s.center);
-            N = (0.5 * N) + 0.5;
-            bool is_front_face = dot(r.direction, N) < 0;
+        if (!surrounds(t_min, t_max, t0)) {
+            t0 = (-b + sqrtf(discriminant)) / (2 * a);
+            if (!surrounds(t_min, t_max, t0)) {
+                hit result = {};
+                result.hit_object = false;
 
-            hit result = {};
-            result.t = t0;
-            result.p = p;
-            result.normal = is_front_face ? N : -N;
-            result.hit_object = true;
-            result.mat = s.mat;
-
-            return result;
+                return result;
+            }
         }
+        // NOTE(fede): We take the vector going from the
+        // center of the sphere to the ray hit point.
+        // This will give us the vector pointing perpen-
+        // dicular to the hit surface.
+        // We normalize that vector for future calculations.
+        v3 p = ray_at(r, t0);
+
+        hit result = {};
+        result.t = t0;
+        result.p = p;
+        v3 outward_normal = (p - s.center) / s.radius;
+        bool is_front_face = dot(r.direction, outward_normal) < 0;
+        result.normal = is_front_face ? outward_normal : -outward_normal;
+        result.hit_object = true;
+        result.mat = s.mat;
+
+        return result;
     }
 
     hit result = {V3(1, 0, 1), FLT_MAX, false};
@@ -55,12 +65,12 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
         return V3(0.0, 0.0, 0.0);
     }
 
-    int size = 2;
+    int size = 4;
     hit closest = {};
     closest.t = FLT_MAX;
     for (int i = 0; i < size; ++i) {
         hit h = ray_color(r, t_min, t_max, s.spheres[i]);
-        if (h.hit_object && h.t < closest.t) {
+        if (h.hit_object && h.t <= closest.t) {
             closest = h;
         }
     }
@@ -103,12 +113,16 @@ int main() {
 
 
     // Sphere in our scene
-    material mat1 = {V3(0.8, 0.8, 0.0), V3(0.8, 0.8, 0.0)};
-    material mat2 = {V3(0.1, 0.2, 0.5), V3(0.1, 0.2, 0.5)};
+    material mat1 = {Lambertian, V3(0.8, 0.8, 0.0), V3(0.8, 0.8, 0.0)};
+    material mat2 = {Lambertian, V3(0.1, 0.2, 0.5), V3(0.1, 0.2, 0.5)};
+    material mat3 = {Metal, V3(0.8, 0.8, 0.8), V3(0.8, 0.8, 0.8)};
+    material mat4 = {Metal, V3(0.8, 0.6, 0.2), V3(0.8, 0.6, 0.2)};
 
-    sphere spheres[2] = {
-        { V3(0.0, -100.5, -1.0), 100, &mat1 },
-        { V3(0.0, 0.0, -1.0), 0.5, &mat2 }
+    sphere spheres[4] = {
+        { V3( 0.0, -100.5, -1.0), 100.0, &mat1 },
+        { V3( 0.0,    0.0, -1.2),   0.5, &mat2 },
+        { V3(-1.0,    0.0, -1.0),   0.5, &mat3 },
+        { V3( 1.0,    0.0, -1.0),   0.5, &mat4 }
     };
 
     scene s = {spheres};
