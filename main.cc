@@ -40,6 +40,7 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
             result.p = p;
             result.normal = is_front_face ? N : -N;
             result.hit_object = true;
+            result.mat = s.mat;
 
             return result;
         }
@@ -74,9 +75,22 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
 
         return lerp(white_color, t, blue_sky_color);
     }
-    v3 direction = random_on_hemisphere(closest.normal);
+
+    material mat = scatter(r, closest);
+    return hadamard(mat.attenuation, ray_color(mat.scattered, max_depth - 1, 0.001, FLT_MAX, s));
+    /*
+    v3 direction = closest.normal + rand_unit_vector(); // random_on_hemisphere(closest.normal);
     ray new_r = { closest.p, direction };
     return 0.5 * ray_color(new_r, max_depth - 1, 0.001, FLT_MAX, s);
+    */
+}
+
+inline float linear_to_gamma(float linear_component) {
+    if (linear_component > 0) {
+        return sqrtf(linear_component);
+    }
+
+    return 0;
 }
 
 int main() {
@@ -89,7 +103,13 @@ int main() {
 
 
     // Sphere in our scene
-    sphere spheres[2] = {{ V3(0.0, -100.5, -1.0), 100 }, { V3(0.0, 0.0, -1.0), 0.5 }};
+    material mat1 = {V3(0.8, 0.8, 0.0), V3(0.8, 0.8, 0.0)};
+    material mat2 = {V3(0.1, 0.2, 0.5), V3(0.1, 0.2, 0.5)};
+
+    sphere spheres[2] = {
+        { V3(0.0, -100.5, -1.0), 100, &mat1 },
+        { V3(0.0, 0.0, -1.0), 0.5, &mat2 }
+    };
 
     scene s = {spheres};
     int samples_per_pixel = 100;
@@ -106,8 +126,11 @@ int main() {
             }
 
             color *= pixel_samples_scale;
+            float r = linear_to_gamma(color.r);
+            float g = linear_to_gamma(color.g);
+            float b = linear_to_gamma(color.b);
             
-            printf("%d %d %d\n", (int) (color.r * 255.0f), (int) (color.g  * 255.0f), (int)(color.b  * 255.0f));
+            printf("%d %d %d\n", (int) (r * 255.0f), (int) (g  * 255.0f), (int)(b  * 255.0f));
         }
     }
     return 0;

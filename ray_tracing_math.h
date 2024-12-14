@@ -89,6 +89,11 @@ inline v3 operator*(v3 a, float b) {
     return result;
 }
 
+inline v3 hadamard(v3 a, v3 b) {
+    v3 result = { a.e[0] * b.e[0], a.e[1] * b.e[1], a.e[2] * b.e[2] };
+    return result;
+}
+
 inline v3 operator*=(v3 &a, float b) {
     a = a * b;
     return a;
@@ -173,6 +178,11 @@ inline v3 random_on_hemisphere(v3 normal) {
     } else {
         return -on_unit_sphere;
     }
+}
+
+inline bool close_to_zero(v3 a) {
+    float threshold = 1e-8;
+    return (a.e[0] < threshold) && (a.e[1] < threshold) && (a.e[2] < threshold);
 }
 
 #endif
