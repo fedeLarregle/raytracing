@@ -130,6 +130,7 @@ inline v3 lerp(v3 a, float t, v3 b) {
 }
 
 inline v3 normalize(v3 a) {
+    // NOTE(fede): (v3 / |v3|)
     v3 result = a * (1.0f / length(a));
     return result;
 }

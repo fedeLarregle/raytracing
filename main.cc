@@ -47,7 +47,7 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
         hit result = {};
         result.t = t0;
         result.p = p;
-        v3 outward_normal = (p - s.center) / s.radius;
+        v3 outward_normal = normalize(p - s.center); // (p - s.center) / s.radius;
         bool is_front_face = dot(r.direction, outward_normal) < 0;
         result.normal = is_front_face ? outward_normal : -outward_normal;
         result.hit_object = true;
@@ -88,11 +88,6 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
 
     material mat = scatter(r, closest);
     return hadamard(mat.attenuation, ray_color(mat.scattered, max_depth - 1, 0.001, FLT_MAX, s));
-    /*
-    v3 direction = closest.normal + rand_unit_vector(); // random_on_hemisphere(closest.normal);
-    ray new_r = { closest.p, direction };
-    return 0.5 * ray_color(new_r, max_depth - 1, 0.001, FLT_MAX, s);
-    */
 }
 
 inline float linear_to_gamma(float linear_component) {
@@ -111,12 +106,30 @@ int main() {
 
     camera c = Camera(image_width, image_height);
 
-
-    // Sphere in our scene
-    material mat1 = {Lambertian, V3(0.8, 0.8, 0.0), V3(0.8, 0.8, 0.0)};
-    material mat2 = {Lambertian, V3(0.1, 0.2, 0.5), V3(0.1, 0.2, 0.5)};
-    material mat3 = {Metal, V3(0.8, 0.8, 0.8), V3(0.8, 0.8, 0.8)};
-    material mat4 = {Metal, V3(0.8, 0.6, 0.2), V3(0.8, 0.6, 0.2)};
+    material mat1 = {
+        .type = Lambertian,
+        .attenuation = V3(0.8, 0.8, 0.0),
+        .albedo = V3(0.8, 0.8, 0.0),
+        .fuzz = 0.0
+    };
+    material mat2 = {
+        .type = Lambertian,
+        .attenuation = V3(0.1, 0.2, 0.5),
+        .albedo = V3(0.1, 0.2, 0.5),
+        .fuzz = 0.0
+    };
+    material mat3 = {
+        .type = Metal,
+        .attenuation = V3(0.8, 0.8, 0.8),
+        .albedo = V3(0.8, 0.8, 0.8),
+        .fuzz = 0.3
+    };
+    material mat4 = {
+        .type = Metal,
+        .attenuation = V3(0.8, 0.6, 0.2),
+        .albedo = V3(0.8, 0.6, 0.2),
+        .fuzz = 1.0
+    };
 
     sphere spheres[4] = {
         { V3( 0.0, -100.5, -1.0), 100.0, &mat1 },

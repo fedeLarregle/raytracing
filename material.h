@@ -16,6 +16,7 @@ struct material {
     v3 attenuation;
     v3 albedo;
     ray scattered;
+    float fuzz;
 };
 
 material lambertian_scatter(ray in, hit h) {
@@ -37,9 +38,16 @@ material metal_scatter(ray in, hit h) {
     material result = {};
 
     v3 reflected = reflect(in.direction, h.normal);
+    reflected = normalize(reflected) + (h.mat->fuzz * rand_unit_vector());
     ray scattered = { h.p, reflected };
-    result.albedo = h.mat->albedo;
-    result.attenuation = h.mat->attenuation;
+    if (dot(scattered.direction, h.normal) < 0) {
+        result.albedo = V3(0.0, 0.0, 0.0);
+        result.attenuation = V3(0.0, 0.0, 0.0);
+    } else {
+        result.albedo = h.mat->albedo;
+        result.attenuation = h.mat->attenuation;
+    }
+
     result.scattered = scattered;
 
     return result;
