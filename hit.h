@@ -5,6 +5,7 @@
 
 struct material;
 
+// TODO(fede): remove bools and make this struct more compact
 struct hit {
     v3 color;
     v3 normal;
@@ -12,6 +13,7 @@ struct hit {
     material *mat;
     float t;
     bool hit_object;
+    bool is_front_face;
 };
 
 #endif

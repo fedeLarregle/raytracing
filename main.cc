@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <float.h>
 
@@ -7,7 +8,6 @@
 #include "ray_tracing_math.h"
 #include "ray.h"
 #include "scene.h"
-#include "sphere.h"
 
 #define array_count(arr) (sizeof((arr)) / (sizeof((arr)[0])))
 
@@ -26,8 +26,7 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
 
     if (discriminant >= 0) {
         float t0 = (-b - sqrtf(discriminant)) / (2 * a);
-        // NOTE(fede): _fardest_ of the two hits onto the sphere
-        // float t1 = (-b + sqrtf(discriminant)) / (2 * a);
+
         if (!surrounds(t_min, t_max, t0)) {
             t0 = (-b + sqrtf(discriminant)) / (2 * a);
             if (!surrounds(t_min, t_max, t0)) {
@@ -47,11 +46,12 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
         hit result = {};
         result.t = t0;
         result.p = p;
-        v3 outward_normal = normalize(p - s.center); // (p - s.center) / s.radius;
+        v3 outward_normal = normalize(p - s.center);
         bool is_front_face = dot(r.direction, outward_normal) < 0;
         result.normal = is_front_face ? outward_normal : -outward_normal;
         result.hit_object = true;
         result.mat = s.mat;
+        result.is_front_face = is_front_face;
 
         return result;
     }
@@ -143,22 +143,46 @@ int main() {
     float pixel_samples_scale = 1.0 / samples_per_pixel;
     int max_depth = 50;
 
-    printf("P3\n%d %d\n255\n", image_width, image_height);
-    for (int j = 0; j < image_height; ++j) {
-        for (int i = 0; i < image_width; ++i) {
-            v3 color = V3(0.0, 0.0, 0.0);
-            for (int sample = 0; sample < samples_per_pixel; ++sample) {
-                ray r = get_ray(c, i, j);
-                color += ray_color(r, max_depth, 0, FLT_MAX, s);
-            }
+    FILE *file = fopen("image_output.ppm", "wb");
 
-            color *= pixel_samples_scale;
-            float r = linear_to_gamma(color.r);
-            float g = linear_to_gamma(color.g);
-            float b = linear_to_gamma(color.b);
-            
-            printf("%d %d %d\n", (int) (r * 255.0f), (int) (g  * 255.0f), (int)(b  * 255.0f));
+    if (file) {
+        fprintf(file, "P6\n%d %d\n255\n", image_width, image_height);
+
+        int buffer_size = image_height * image_width * 3;
+        char *buffer = (char *) malloc(buffer_size);
+        if (buffer == NULL) {
+            perror("malloc");
+            fclose(file);
+            exit(EXIT_FAILURE);
         }
+
+        for (int j = 0; j < image_height; ++j) {
+            for (int i = 0; i < image_width; ++i) {
+                v3 color = V3(0.0, 0.0, 0.0);
+                for (int sample = 0; sample < samples_per_pixel; ++sample) {
+                    ray r = get_ray(c, i, j);
+                    color += ray_color(r, max_depth, 0, FLT_MAX, s);
+                }
+
+                color *= pixel_samples_scale;
+                float r = linear_to_gamma(color.r);
+                float g = linear_to_gamma(color.g);
+                float b = linear_to_gamma(color.b);
+                
+                int index = (j * image_width + i) * 3;
+                buffer[index + 0] = (int) (r * 255.0f);
+                buffer[index + 1] = (int) (g * 255.0f);
+                buffer[index + 2] = (int) (b * 255.0f);
+            }
+        }
+
+        size_t pixel_count = image_width * image_height;
+        fwrite(buffer, 3, pixel_count, file);
+
+        fclose(file);
+
+        free(buffer);
     }
+    
     return 0;
 }

@@ -8,7 +8,8 @@
 
 typedef enum {
     Lambertian,
-    Metal
+    Metal,
+    Dielectric
 } Type;
 
 struct material {
@@ -17,6 +18,7 @@ struct material {
     v3 albedo;
     ray scattered;
     float fuzz;
+    float refraction_index;
 };
 
 material lambertian_scatter(ray in, hit h) {
@@ -48,6 +50,29 @@ material metal_scatter(ray in, hit h) {
         result.attenuation = h.mat->attenuation;
     }
 
+    result.scattered = scattered;
+
+    return result;
+}
+
+material dielectric_scatter(ray in, hit h) {
+    material result = {};
+
+    float ri = h.is_front_face ? (1.0 / h.mat->refraction_index) : h.mat->refraction_index;
+    v3 unit_direction = normalize(in.direction);
+    float cos_theta = min(dot(unit_direction, h.normal), 1.0);
+    float sin_theta = sqrtf(1 - (cos_theta * cos_theta));
+    bool cannot_refract = ri * sin_theta > 1.0;
+
+    v3 direction = {};
+    if (cannot_refract || reflectance(cos_theta, h.mat->refraction_index) > randf()) {
+        direction = reflect(unit_direction, h.normal);
+    } else {
+        direction = V3(0.0f, 0.0f, 0.0f);// refract();
+    }
+
+    ray scattered = { h.p, direction };
+    result.attenuation = V3(1.0, 1.0, 1.0);
     result.scattered = scattered;
 
     return result;

@@ -190,4 +190,23 @@ inline v3 reflect(v3 v, v3 n) {
     return v - 2 * dot(v, n) * n;
 }
 
+//inline v3 refract(ray r, material mat) {
+    // NOTE(fede): Snell's law
+    // n  = refraction index (first  material)
+    // n' = refraction index (second material)
+    // n' * sinf(refraction angle) = n * sinf(incidence angle) = (n / n') * sinf(incidence angle)
+    // index of refraction = n = (speed of light in vacumm) / velocity of light in that medium
+
+//    v3 result = {};
+
+//    return result;
+//}
+
+inline float reflectance(float cosine, float refraction_index) {
+    // NOTE(fede): Schlick's approximation for reflectance
+    float r0 = (1 - refraction_index) / (1 + refraction_index);
+    r0 = r0 * r0;
+    return r0 + (1 + r0) * powf((1 - cosine), 5);
+}
+
 #endif

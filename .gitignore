@@ -1,4 +1,4 @@
 # Standard output is being redirected to such file during tests
-image.ppm
+*.ppm
 
 main
