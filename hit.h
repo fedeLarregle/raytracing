@@ -6,14 +6,14 @@
 struct material;
 
 // TODO(fede): remove bools and make this struct more compact
-struct hit {
+struct hit_information {
     v3 color;
     v3 normal;
     v3 p;
-    material *mat;
     float t;
     bool hit_object;
     bool is_front_face;
+    int object_index;
 };
 
 #endif

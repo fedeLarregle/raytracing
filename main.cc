@@ -15,7 +15,8 @@ inline bool surrounds(float min, float max, float n) {
     return min < n && n < max;
 }
 
-hit ray_color(ray r, float t_min, float t_max, sphere s) {
+hit_information ray_color(ray r, float t_min, float t_max, scene scene_object, int object_index) {
+    sphere s = scene_object.spheres[object_index];
     v3 cq = s.center - r.origin;
     float a = dot(r.direction, r.direction);
     float b = dot(-2 * r.direction, cq);
@@ -30,33 +31,28 @@ hit ray_color(ray r, float t_min, float t_max, sphere s) {
         if (!surrounds(t_min, t_max, t0)) {
             t0 = (-b + sqrtf(discriminant)) / (2 * a);
             if (!surrounds(t_min, t_max, t0)) {
-                hit result = {};
+                hit_information result = {};
                 result.hit_object = false;
 
                 return result;
             }
         }
-        // NOTE(fede): We take the vector going from the
-        // center of the sphere to the ray hit point.
-        // This will give us the vector pointing perpen-
-        // dicular to the hit surface.
-        // We normalize that vector for future calculations.
         v3 p = ray_at(r, t0);
-
-        hit result = {};
-        result.t = t0;
-        result.p = p;
         v3 outward_normal = normalize(p - s.center);
         bool is_front_face = dot(r.direction, outward_normal) < 0;
+
+        hit_information result = {};
+        result.t = t0;
+        result.p = p;
         result.normal = is_front_face ? outward_normal : -outward_normal;
         result.hit_object = true;
-        result.mat = s.mat;
         result.is_front_face = is_front_face;
+        result.object_index = object_index;
 
         return result;
     }
 
-    hit result = {V3(1, 0, 1), FLT_MAX, false};
+    hit_information result = {V3(1, 0, 1), FLT_MAX, false};
     return result;
 }
 
@@ -66,10 +62,10 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
     }
 
     int size = 4;
-    hit closest = {};
+    hit_information closest = {};
     closest.t = FLT_MAX;
     for (int i = 0; i < size; ++i) {
-        hit h = ray_color(r, t_min, t_max, s.spheres[i]);
+        hit_information h = ray_color(r, t_min, t_max, s, i);
         if (h.hit_object && h.t <= closest.t) {
             closest = h;
         }
@@ -86,7 +82,7 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
         return lerp(white_color, t, blue_sky_color);
     }
 
-    material mat = scatter(r, closest);
+    material mat = scatter(r, s, closest);
     return hadamard(mat.attenuation, ray_color(mat.scattered, max_depth - 1, 0.001, FLT_MAX, s));
 }
 
@@ -132,13 +128,15 @@ int main() {
     };
 
     sphere spheres[4] = {
-        { V3( 0.0, -100.5, -1.0), 100.0, &mat1 },
-        { V3( 0.0,    0.0, -1.2),   0.5, &mat2 },
-        { V3(-1.0,    0.0, -1.0),   0.5, &mat3 },
-        { V3( 1.0,    0.0, -1.0),   0.5, &mat4 }
+        { V3( 0.0, -100.5, -1.0), 100.0, 0 },
+        { V3( 0.0,    0.0, -1.2),   0.5, 1 },
+        { V3(-1.0,    0.0, -1.0),   0.5, 2 },
+        { V3( 1.0,    0.0, -1.0),   0.5, 3 }
     };
 
-    scene s = {spheres};
+    material materials[4] = { mat1, mat2, mat3, mat4 };
+
+    scene s = { spheres, materials };
     int samples_per_pixel = 100;
     float pixel_samples_scale = 1.0 / samples_per_pixel;
     int max_depth = 50;
@@ -159,6 +157,7 @@ int main() {
         for (int j = 0; j < image_height; ++j) {
             for (int i = 0; i < image_width; ++i) {
                 v3 color = V3(0.0, 0.0, 0.0);
+                // NOTE(fede): Sampling for antialiasing
                 for (int sample = 0; sample < samples_per_pixel; ++sample) {
                     ray r = get_ray(c, i, j);
                     color += ray_color(r, max_depth, 0, FLT_MAX, s);
