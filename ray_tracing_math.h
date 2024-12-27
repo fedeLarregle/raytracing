@@ -4,7 +4,11 @@
 #include <cstdlib>
 #include "math.h"
 
-float min(float a, float b) {
+inline float degrees_to_radians(float degrees) {
+    return degrees * M_PI / 180.0;
+}
+
+inline float min(float a, float b) {
     if (a < b) {
         return a;
     } else {
@@ -12,7 +16,7 @@ float min(float a, float b) {
     }
 }
 
-float max(float a, float b) {
+inline float max(float a, float b) {
     if (a > b) {
         return a;
     } else {
@@ -21,7 +25,7 @@ float max(float a, float b) {
 
 }
 
-float _abs(float a) {
+inline float _abs(float a) {
     if (a < 0.0) {
         return -a;
     } else {

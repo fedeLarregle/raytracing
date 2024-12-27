@@ -27,7 +27,9 @@ struct sphere {
 struct scene {
     // TODO(fede): We can generalize this instead of having a list of _spheres_
     sphere *spheres;
+    size_t sphere_count;
     material *materials;
+    size_t material_count;
 };
 
 material lambertian_scatter(ray in, hit_information h, material mat) {

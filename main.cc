@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+#include <time.h>
 
 #include "camera.h"
 #include "hit.h"
 #include "ray_tracing_math.h"
 #include "ray.h"
 #include "scene.h"
-
-#define array_count(arr) (sizeof((arr)) / (sizeof((arr)[0])))
 
 inline bool surrounds(float min, float max, float n) {
     return min < n && n < max;
@@ -61,10 +60,9 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
         return V3(0.0, 0.0, 0.0);
     }
 
-    int size = 4;
     hit_information closest = {};
     closest.t = FLT_MAX;
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < s.sphere_count; ++i) {
         hit_information h = ray_color(r, t_min, t_max, s, i);
         if (h.hit_object && h.t <= closest.t) {
             closest = h;
@@ -95,6 +93,7 @@ inline float linear_to_gamma(float linear_component) {
 }
 
 int main() {
+    time_t start_time = time(0);
     float aspect_ratio = 16.0 / 9.0;
     int image_width = 400;
     int image_height = (int) image_width / aspect_ratio;
@@ -114,12 +113,22 @@ int main() {
         .albedo = V3(0.1, 0.2, 0.5),
         .fuzz = 0.0
     };
-    material material_left = {
+    material material_left_glass = {
         .type = Dielectric,
         .attenuation = V3(1.0, 1.0, 1.0),
         .albedo = V3(0.8, 0.8, 0.8),
         .fuzz = 0.0,
-        .refraction_index = (1.00 / 1.33)
+        // NOTE(fede): Standard refractive index of glass
+        .refraction_index = (1.50)
+    };
+    material material_left_bubble = {
+        .type = Dielectric,
+        .attenuation = V3(1.0, 1.0, 1.0),
+        .albedo = V3(0.8, 0.8, 0.8),
+        .fuzz = 0.0,
+        // NOTE(fede): n/n' refractive_index / refractive_index
+        // of enclosing object (in this case the glass)
+        .refraction_index = (1.00 / 1.50)
     };
     material material_right = {
         .type = Metal,
@@ -128,16 +137,23 @@ int main() {
         .fuzz = 1.0
     };
 
-    sphere spheres[4] = {
+    sphere spheres[5] = {
         { V3( 0.0, -100.5, -1.0), 100.0, 0 },
         { V3( 0.0,    0.0, -1.2),   0.5, 1 },
         { V3(-1.0,    0.0, -1.0),   0.5, 2 },
-        { V3( 1.0,    0.0, -1.0),   0.5, 3 }
+        { V3(-1.0,    0.0, -1.0),   0.4, 3 },
+        { V3( 1.0,    0.0, -1.0),   0.5, 4 }
     };
 
-    material materials[4] = { material_ground, material_center, material_left, material_right };
+    material materials[5] = {
+        material_ground,
+        material_center,
+        material_left_glass,
+        material_left_bubble,
+        material_right
+    };
 
-    scene s = { spheres, materials };
+    scene s = { spheres, 5, materials, 5 };
     int samples_per_pixel = 100;
     float pixel_samples_scale = 1.0 / samples_per_pixel;
     int max_depth = 50;
@@ -154,6 +170,10 @@ int main() {
             fclose(file);
             exit(EXIT_FAILURE);
         }
+
+        time_t time_before_iterating_over_pixels = time(0);
+        double diff_time = difftime(time_before_iterating_over_pixels, start_time);
+        printf("Elapsed time before iterating over pixels is: %.2lf seconds\n\n", diff_time);
 
         for (int j = 0; j < image_height; ++j) {
             for (int i = 0; i < image_width; ++i) {
@@ -176,6 +196,9 @@ int main() {
             }
         }
 
+        time_t time_before_writing_data = time(0);
+        diff_time = difftime(time_before_writing_data, start_time);
+        printf("Elapsed time before writing data is: %.2lf seconds\n\n", diff_time);
         size_t pixel_count = image_width * image_height;
         fwrite(buffer, 3, pixel_count, file);
 
@@ -183,6 +206,10 @@ int main() {
 
         free(buffer);
     }
+
+    time_t end_time = time(0);
+    double diff_time = difftime(end_time, start_time);
+    printf("Total elapsed time is: %.2lf seconds\n\n", diff_time);
     
     return 0;
 }
