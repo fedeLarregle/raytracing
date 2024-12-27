@@ -102,25 +102,26 @@ int main() {
 
     camera c = Camera(image_width, image_height);
 
-    material mat1 = {
+    material material_ground = {
         .type = Lambertian,
         .attenuation = V3(0.8, 0.8, 0.0),
         .albedo = V3(0.8, 0.8, 0.0),
         .fuzz = 0.0
     };
-    material mat2 = {
+    material material_center = {
         .type = Lambertian,
         .attenuation = V3(0.1, 0.2, 0.5),
         .albedo = V3(0.1, 0.2, 0.5),
         .fuzz = 0.0
     };
-    material mat3 = {
-        .type = Metal,
-        .attenuation = V3(0.8, 0.8, 0.8),
+    material material_left = {
+        .type = Dielectric,
+        .attenuation = V3(1.0, 1.0, 1.0),
         .albedo = V3(0.8, 0.8, 0.8),
-        .fuzz = 0.3
+        .fuzz = 0.0,
+        .refraction_index = (1.00 / 1.33)
     };
-    material mat4 = {
+    material material_right = {
         .type = Metal,
         .attenuation = V3(0.8, 0.6, 0.2),
         .albedo = V3(0.8, 0.6, 0.2),
@@ -134,7 +135,7 @@ int main() {
         { V3( 1.0,    0.0, -1.0),   0.5, 3 }
     };
 
-    material materials[4] = { mat1, mat2, mat3, mat4 };
+    material materials[4] = { material_ground, material_center, material_left, material_right };
 
     scene s = { spheres, materials };
     int samples_per_pixel = 100;

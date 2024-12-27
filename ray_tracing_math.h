@@ -21,6 +21,14 @@ float max(float a, float b) {
 
 }
 
+float _abs(float a) {
+    if (a < 0.0) {
+        return -a;
+    } else {
+        return a;
+    }
+}
+
 union v3 {
     struct {
         float x, y, z;
@@ -190,17 +198,18 @@ inline v3 reflect(v3 v, v3 n) {
     return v - 2 * dot(v, n) * n;
 }
 
-//inline v3 refract(ray r, material mat) {
+inline v3 refract(v3 uv, v3 normal, float refractive_index_ratio) {
     // NOTE(fede): Snell's law
     // n  = refraction index (first  material)
     // n' = refraction index (second material)
     // n' * sinf(refraction angle) = n * sinf(incidence angle) = (n / n') * sinf(incidence angle)
     // index of refraction = n = (speed of light in vacumm) / velocity of light in that medium
+    float cos_theta = min(dot(-uv, normal), 1.0);
+    v3 ray_out_perpendicular = refractive_index_ratio * (uv + (cos_theta * normal));
+    v3 ray_out_parallel = (-sqrtf(_abs(1 - length_squared(ray_out_perpendicular)))) * normal;
 
-//    v3 result = {};
-
-//    return result;
-//}
+    return ray_out_perpendicular + ray_out_parallel;
+}
 
 inline float reflectance(float cosine, float refraction_index) {
     // NOTE(fede): Schlick's approximation for reflectance

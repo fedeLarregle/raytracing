@@ -67,17 +67,21 @@ material metal_scatter(ray in, hit_information h, material mat) {
 material dielectric_scatter(ray in, hit_information h, material mat) {
     material result = {};
 
-    float ri = h.is_front_face ? (1.0 / mat.refraction_index) : mat.refraction_index;
+    float refractive_index = h.is_front_face ? (1.0 / mat.refraction_index) : mat.refraction_index;
+    // NOTE(fede): Little math remainder
+    //  a . b = |a| |b| cos_theta
+    //  if we use unit vectors we can simplify to:
+    //  a . b = cos_theta
     v3 unit_direction = normalize(in.direction);
-    float cos_theta = min(dot(unit_direction, h.normal), 1.0);
+    float cos_theta = min(dot(-unit_direction, h.normal), 1.0);
     float sin_theta = sqrtf(1 - (cos_theta * cos_theta));
-    bool cannot_refract = ri * sin_theta > 1.0;
+    bool cannot_refract = refractive_index * sin_theta > 1.0;
 
     v3 direction = {};
     if (cannot_refract || reflectance(cos_theta, mat.refraction_index) > randf()) {
         direction = reflect(unit_direction, h.normal);
     } else {
-        direction = V3(0.0f, 0.0f, 0.0f);// refract();
+        direction = refract(unit_direction, h.normal, refractive_index);
     }
 
     ray scattered = { h.p, direction };
@@ -98,6 +102,10 @@ material scatter(ray in, scene scene_object, hit_information h) {
     }
     case Metal: {
         result = metal_scatter(in, h, mat);
+        break;
+    }
+    case Dielectric: {
+        result = dielectric_scatter(in, h, mat);
         break;
     }
     
