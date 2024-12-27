@@ -8,23 +8,25 @@ struct camera {
     v3 pixel00_location;
     v3 pixel_delta_u;
     v3 pixel_delta_v;
-    v3 position;            // NOTE(fede): Point camera is looking from
-    v3 direction;           // NOTE(fede): Point camera is looking at
+    v3 position;         // NOTE(fede): Point camera is looking from
+    v3 look_at;          // NOTE(fede): Point camera is looking at
+    v3 vup;              // NOTE(fede): Camera relative "up" direction
+    v3 u;                // NOTE(fede): unit vector pointing to camera right   
+    v3 v;                // NOTE(fede): unit vector pointing to camera up
+    v3 w;                // NOTE(fede): unit vector pointing to opposite camera view (right handed)
 
-    float vfov;             // NOTE(fede): Vertical view angle (field of view)
+    float vfov;          // NOTE(fede): Vertical view angle (field of view)
     float focal_length;
 };
 
-camera Camera(int image_width, int image_height) {
-    float focal_length = 1.0f;
-
+camera Camera(int image_width, int image_height, v3 position, v3 look_at, v3 vup, float vfov_degrees) {
     camera c = {};
-    c.position  = V3(0.0, 0.0, 0.0);
-    c.direction = V3(0.0, 0.0, -1.0);
-    c.focal_length = focal_length;
-    c.vfov = 90.0;
+    c.position  = position;
+    c.look_at = look_at;
+    c.focal_length = length(c.position - c.look_at);
+    c.vfov = vfov_degrees;
+    c.vup = vup;
 
-    v3 camera_up_direction = V3(0.0, 1.0, 0.0);
     float theta = degrees_to_radians(c.vfov);
     float h = tanf(theta / 2);
 
@@ -32,14 +34,19 @@ camera Camera(int image_width, int image_height) {
     float viewport_height = 2.0 * h * c.focal_length;
     float viewport_width = viewport_height * ((float) image_width / image_height);
 
+    // NOTE(fede): Calculate u,v,w unit basis vectors for the camera coordinate frame
+    c.w = normalize(c.position - c.look_at);
+    c.u = normalize(cross(c.vup, c.w));
+    c.v = cross(c.w, c.u);
+
     // Viewport
-    v3 viewport_u = V3(viewport_width, 0.0, 0.0);
-    v3 viewport_v = V3(0.0, -viewport_height, 0.0);
+    v3 viewport_u = viewport_width * c.u;
+    v3 viewport_v = viewport_height * -c.v;
 
     v3 pixel_delta_u = viewport_u / image_width;
     v3 pixel_delta_v = viewport_v / image_height;
 
-    v3 viewport_upper_left = c.position - V3(0.0, 0.0, focal_length) - (viewport_u / 2) - (viewport_v / 2);
+    v3 viewport_upper_left = c.position - (c.focal_length * c.w) - (viewport_u / 2) - (viewport_v / 2);
     v3 pixel00_location = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
     c.pixel00_location = pixel00_location;

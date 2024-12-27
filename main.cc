@@ -99,7 +99,11 @@ int main() {
     int image_height = (int) image_width / aspect_ratio;
     image_height = image_height < 1 ? 1 : image_height;
 
-    camera c = Camera(image_width, image_height);
+    v3 camera_position        = V3(-2.0, 2.0, 1.0);
+    v3 camera_look_at         = V3(0.0, 0.0, -1.0);
+    v3 camera_vup             = V3(0.0, 1.0, 0.0);
+    float camera_vfov_degrees = 90.0;
+    camera c = Camera(image_width, image_height, camera_position, camera_look_at, camera_vup, camera_vfov_degrees);
 
     material material_ground = {
         .type = Lambertian,
