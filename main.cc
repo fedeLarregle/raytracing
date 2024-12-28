@@ -14,11 +14,11 @@ inline bool surrounds(float min, float max, float n) {
     return min < n && n < max;
 }
 
-hit_information ray_color(ray r, float t_min, float t_max, scene scene_object, int object_index) {
-    sphere s = scene_object.spheres[object_index];
-    v3 cq = s.center - r.origin;
-    float a = dot(r.direction, r.direction);
-    float b = dot(-2 * r.direction, cq);
+hit_information ray_color(ray* r, float t_min, float t_max, scene* scene_object, int object_index) {
+    sphere s = scene_object->spheres[object_index];
+    v3 cq = s.center - r->origin;
+    float a = dot(r->direction, r->direction);
+    float b = dot(-2 * r->direction, cq);
     float c = dot(cq, cq) - (s.radius * s.radius);
     // NOTE(fede): Lets evaluate the quadratic equation's
     //  discriminant to see if our ray has hit the sphere
@@ -38,7 +38,7 @@ hit_information ray_color(ray r, float t_min, float t_max, scene scene_object, i
         }
         v3 p = ray_at(r, t0);
         v3 outward_normal = normalize(p - s.center);
-        bool is_front_face = dot(r.direction, outward_normal) < 0;
+        bool is_front_face = dot(r->direction, outward_normal) < 0;
 
         hit_information result = {};
         result.t = t0;
@@ -55,14 +55,14 @@ hit_information ray_color(ray r, float t_min, float t_max, scene scene_object, i
     return result;
 }
 
-v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
+v3 ray_color(ray* r, int max_depth, float t_min, float t_max, scene* s) {
     if (max_depth <= 0) {
         return V3(0.0, 0.0, 0.0);
     }
 
     hit_information closest = {};
     closest.t = FLT_MAX;
-    for (int i = 0; i < s.sphere_count; ++i) {
+    for (int i = 0; i < s->sphere_count; ++i) {
         hit_information h = ray_color(r, t_min, t_max, s, i);
         if (h.hit_object && h.t <= closest.t) {
             closest = h;
@@ -72,7 +72,7 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
     if (!closest.hit_object) {
         // NOTE(fede): If no objects hit by ray just render
         //  the _blue_sky_ background for this ray
-        v3 unit_direction = normalize(r.direction);
+        v3 unit_direction = normalize(r->direction);
         v3 white_color = V3(1.0, 1.0, 1.0);
         v3 blue_sky_color = V3(0.5, 0.7, 1.0);
         float t = 0.5 * (unit_direction.y + 1.0);
@@ -80,8 +80,8 @@ v3 ray_color(ray r, int max_depth, float t_min, float t_max, scene s) {
         return lerp(white_color, t, blue_sky_color);
     }
 
-    material mat = scatter(r, s, closest);
-    return hadamard(mat.attenuation, ray_color(mat.scattered, max_depth - 1, 0.001, FLT_MAX, s));
+    material mat = scatter(r, s, &closest);
+    return hadamard(mat.attenuation, ray_color(&mat.scattered, max_depth - 1, 0.001, FLT_MAX, s));
 }
 
 inline float linear_to_gamma(float linear_component) {
@@ -270,8 +270,8 @@ int main() {
                 v3 color = V3(0.0, 0.0, 0.0);
                 // NOTE(fede): Sampling for antialiasing
                 for (int sample = 0; sample < samples_per_pixel; ++sample) {
-                    ray r = get_ray(c, i, j);
-                    color += ray_color(r, max_depth, 0, FLT_MAX, s);
+                    ray r = get_ray(&c, i, j);
+                    color += ray_color(&r, max_depth, 0, FLT_MAX, &s);
                 }
 
                 color *= pixel_samples_scale;

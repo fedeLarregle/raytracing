@@ -8,8 +8,8 @@ struct ray {
     v3 direction;
 };
 
-v3 ray_at(ray r, float t) {
-    v3 result = r.origin + r.direction * t;
+v3 ray_at(ray* r, float t) {
+    v3 result = r->origin + r->direction * t;
 
     return result;
 }

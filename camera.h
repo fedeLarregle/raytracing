@@ -67,12 +67,12 @@ inline v3 defocus_disk_sample(camera * c) {
     return c->position + (p.e[0] * c->defocus_disk_u) + (p.e[1] * c->defocus_disk_v);
 }
 
-ray get_ray(camera c, int x, int y) {
+ray get_ray(camera* c, int x, int y) {
     v3 random_offset = V3(randf() - 0.5, randf() - 0.5, 0.0);
-    v3 pixel_center = c.pixel00_location + 
-                      ((x + random_offset.x) * c.pixel_delta_u) +
-                      ((y + random_offset.y) * c.pixel_delta_v);
-    v3 ray_origin = (c.defocus_angle <= 0) ? c.position : defocus_disk_sample(&c);
+    v3 pixel_center = c->pixel00_location + 
+                      ((x + random_offset.x) * c->pixel_delta_u) +
+                      ((y + random_offset.y) * c->pixel_delta_v);
+    v3 ray_origin = (c->defocus_angle <= 0) ? c->position : defocus_disk_sample(c);
     v3 ray_direction = pixel_center - ray_origin;
     ray r = { ray_origin, ray_direction };
 
