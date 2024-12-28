@@ -95,20 +95,31 @@ inline float linear_to_gamma(float linear_component) {
 int main() {
     time_t start_time = time(0);
     float aspect_ratio = 16.0 / 9.0;
-    int image_width = 400;
+    int image_width = 1200;
     int image_height = (int) image_width / aspect_ratio;
     image_height = image_height < 1 ? 1 : image_height;
 
-    v3 camera_position        = V3(-2.0, 2.0, 1.0);
-    v3 camera_look_at         = V3(0.0, 0.0, -1.0);
+    v3 camera_position        = V3(13.0, 2.0, 3.0);
+    v3 camera_look_at         = V3(0.0, 0.0, 0.0);
     v3 camera_vup             = V3(0.0, 1.0, 0.0);
-    float camera_vfov_degrees = 90.0;
-    camera c = Camera(image_width, image_height, camera_position, camera_look_at, camera_vup, camera_vfov_degrees);
+    float camera_vfov_degrees = 20.0;
+    float focus_distance = 10.0;
+    float defocus_angle_degrees = 0.6;
+    camera c = Camera(
+        image_width,
+        image_height,
+        camera_position,
+        camera_look_at,
+        camera_vup,
+        camera_vfov_degrees,
+        focus_distance,
+        defocus_angle_degrees
+    );
 
     material material_ground = {
         .type = Lambertian,
-        .attenuation = V3(0.8, 0.8, 0.0),
-        .albedo = V3(0.8, 0.8, 0.0),
+        .attenuation = V3(0.5, 0.5, 0.5),
+        .albedo = V3(0.5, 0.5, 0.5),
         .fuzz = 0.0
     };
     material material_center = {
@@ -140,24 +151,99 @@ int main() {
         .albedo = V3(0.8, 0.6, 0.2),
         .fuzz = 1.0
     };
-
-    sphere spheres[5] = {
-        { V3( 0.0, -100.5, -1.0), 100.0, 0 },
-        { V3( 0.0,    0.0, -1.2),   0.5, 1 },
-        { V3(-1.0,    0.0, -1.0),   0.5, 2 },
-        { V3(-1.0,    0.0, -1.0),   0.4, 3 },
-        { V3( 1.0,    0.0, -1.0),   0.5, 4 }
+    material material_dielectric_big = {
+        .type = Dielectric,
+        .attenuation = V3(1.0, 1.0, 1.0),
+        .albedo = V3(0.0, 0.0, 0.0),
+        .fuzz = 0.0,
+        .refraction_index = 1.50
+    };
+    sphere s1 = {
+        .center = V3(0.0, 1.0, 0.0),
+        .radius = 1.0,
+        .material_index = 5
     };
 
-    material materials[5] = {
+    material material_diffuse_big = {
+        .type = Lambertian,
+        .attenuation = V3(0.4, 0.2, 0.1),
+        .albedo = V3(0.4, 0.2, 0.1),
+    };
+
+    sphere s2 = {
+        .center = V3(-4.0, 1.0, 0.0),
+        .radius = 1.0,
+        .material_index = 6
+    };
+
+    material material_metal_big = {
+        .type = Metal,
+        .attenuation = V3(0.8, 0.8, 0.8),
+        .albedo = V3(0.8, 0.8, 0.8),
+        .fuzz = 0.0,
+        .refraction_index = (1.00 / 1.50)
+    };
+
+    sphere s3 = {
+        .center = V3(4.0, 1.0, 0.0),
+        .radius = 1.0,
+        .material_index = 7
+    };
+
+    sphere spheres[103] = {
+        { V3( 0.0, -1000.0, 0.0), 1000.0, 0}
+    };
+
+    int index = 1;
+    while (index < 100) {
+        float choose_material = randf();
+        
+        v3 center = V3(randf(-11, 11) + 0.9 * randf(), 0.2, randf(-11, 11) + 0.9 * randf());
+        if (length(center - V3(4.0, 0.2, 0.0)) > 0.9) {
+            if (choose_material < 0.6) {
+                // NOTE(fede): Diffuse material
+                sphere s = {
+                    .center = center,
+                    .radius = 0.2,
+                    .material_index = 1
+                };
+                spheres[index] = s;
+            } else if (choose_material < 0.9) {
+                // NOTE(fede): Metal material
+                sphere s = {
+                    .center = center,
+                    .radius = 0.2,
+                    .material_index = 4
+                };
+                spheres[index] = s;
+            } else {
+                // NOTE(fede): Glass material
+                sphere s = {
+                    .center = center,
+                    .radius = 0.2,
+                    .material_index = 2
+                };
+                spheres[index] = s;
+            }
+            index++;
+        }
+    }
+    spheres[100] = s1;
+    spheres[101] = s2;
+    spheres[102] = s3;
+
+    material materials[8] = {
         material_ground,
         material_center,
         material_left_glass,
         material_left_bubble,
-        material_right
+        material_right,
+        material_dielectric_big,
+        material_diffuse_big,
+        material_metal_big
     };
 
-    scene s = { spheres, 5, materials, 5 };
+    scene s = { spheres, 103, materials, 8 };
     int samples_per_pixel = 100;
     float pixel_samples_scale = 1.0 / samples_per_pixel;
     int max_depth = 50;

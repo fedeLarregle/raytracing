@@ -183,6 +183,16 @@ inline v3 rand_unit_vector() {
     }
 }
 
+inline v3 rand_in_unit_disk() {
+    while (true) {
+        v3 p = V3(randf(-1.0, 1.0), randf(-1.0, 1.0), 0.0);
+        float lensq = length_squared(p);
+        if (lensq < 1) {
+            return p;
+        }
+    }
+}
+
 inline v3 random_on_hemisphere(v3 normal) {
     v3 on_unit_sphere = rand_unit_vector();
     if (dot(on_unit_sphere, normal) > 0.0) {
